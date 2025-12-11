@@ -32,9 +32,6 @@ const Footer = () => {
                 <Link to="/services">Our Services</Link>
               </li>
               <li>
-                <Link to="/dentists">Our Dentists</Link>
-              </li>
-              <li>
                 <Link to="/appointments">Book Appointment</Link>
               </li>
             </ul>
