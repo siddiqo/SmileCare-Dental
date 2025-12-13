@@ -7,6 +7,7 @@ const PatientModal = ({ isOpen, toggle, patient, onSave }) => {
     email: '',
     phone: '',
     dateOfBirth: '',
+    gender: '',
     address: '',
     medicalHistory: ''
   });
@@ -18,6 +19,7 @@ const PatientModal = ({ isOpen, toggle, patient, onSave }) => {
         email: patient.email || '',
         phone: patient.phone || '',
         dateOfBirth: patient.dateOfBirth ? patient.dateOfBirth.split('T')[0] : '',
+        gender: patient.gender || '',
         address: patient.address || '',
         medicalHistory: patient.medicalHistory || ''
       });
@@ -27,6 +29,7 @@ const PatientModal = ({ isOpen, toggle, patient, onSave }) => {
         email: '',
         phone: '',
         dateOfBirth: '',
+        gender: '',
         address: '',
         medicalHistory: ''
       });
@@ -97,6 +100,39 @@ const PatientModal = ({ isOpen, toggle, patient, onSave }) => {
               value={formData.dateOfBirth}
               onChange={handleChange}
             />
+          </FormGroup>
+          <FormGroup>
+            <Label>Gender</Label>
+            <div className="d-flex gap-3 mt-2">
+              <div className="form-check">
+                <Input
+                  type="radio"
+                  name="gender"
+                  id="genderMale"
+                  value="male"
+                  checked={formData.gender === 'male'}
+                  onChange={handleChange}
+                  className="form-check-input"
+                />
+                <Label className="form-check-label" for="genderMale">
+                  Male
+                </Label>
+              </div>
+              <div className="form-check">
+                <Input
+                  type="radio"
+                  name="gender"
+                  id="genderFemale"
+                  value="female"
+                  checked={formData.gender === 'female'}
+                  onChange={handleChange}
+                  className="form-check-input"
+                />
+                <Label className="form-check-label" for="genderFemale">
+                  Female
+                </Label>
+              </div>
+            </div>
           </FormGroup>
           <FormGroup>
             <Label for="address">Address</Label>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Form, FormGroup, Label, Input } from 'reactstrap';
+import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Form, FormGroup, Label, Input, FormText } from 'reactstrap';
+import { FaClock } from 'react-icons/fa';
 
 const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, dentists }) => {
   const [formData, setFormData] = useState({
@@ -14,6 +15,41 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
     notes: ''
   });
 
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const API_URL = 'http://localhost:5000';
+
+  const timeSlots = [
+    '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+    '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM',
+    '4:00 PM', '5:00 PM', '6:00 PM'
+  ];
+
+  const fetchBookedSlots = async (dentistId, date, excludeAppointmentId = null) => {
+    if (!dentistId || !date) {
+      setBookedSlots([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/appointments`);
+      const data = await response.json();
+      if (data.flag && data.appointments) {
+        // Filter appointments for selected dentist and date
+        const booked = data.appointments
+          .filter(apt =>
+            apt.dentistId === dentistId &&
+            apt.date === date &&
+            apt.status !== 'Cancelled' &&
+            apt._id !== excludeAppointmentId // Exclude current appointment when editing
+          )
+          .map(apt => apt.time);
+        setBookedSlots(booked);
+      }
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+    }
+  };
+
   useEffect(() => {
     if (appointment) {
       setFormData({
@@ -27,6 +63,10 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
         status: appointment.status || 'Pending',
         notes: appointment.notes || ''
       });
+      // Fetch booked slots for the current appointment's dentist and date
+      if (appointment.dentistId && appointment.date) {
+        fetchBookedSlots(appointment.dentistId, appointment.date, appointment._id);
+      }
     } else {
       setFormData({
         patientName: '',
@@ -39,6 +79,7 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
         status: 'Pending',
         notes: ''
       });
+      setBookedSlots([]);
     }
   }, [appointment]);
 
@@ -47,23 +88,41 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
 
     if (name === 'patientId') {
       const selectedPatient = patients?.find(p => p._id === value);
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         patientId: value,
         patientName: selectedPatient ? selectedPatient.name : ''
-      });
+      }));
     } else if (name === 'dentistId') {
       const selectedDentist = dentists?.find(d => d._id === value);
-      setFormData({
-        ...formData,
-        dentistId: value,
-        dentistName: selectedDentist ? selectedDentist.name : ''
+      setFormData(prev => {
+        const updated = {
+          ...prev,
+          dentistId: value,
+          dentistName: selectedDentist ? selectedDentist.name : ''
+        };
+        // Fetch booked slots if date is already selected
+        if (prev.date) {
+          fetchBookedSlots(value, prev.date, appointment?._id);
+        }
+        return updated;
+      });
+    } else if (name === 'date') {
+      setFormData(prev => {
+        // Fetch booked slots if dentist is already selected
+        if (prev.dentistId) {
+          fetchBookedSlots(prev.dentistId, value, appointment?._id);
+        }
+        return {
+          ...prev,
+          [name]: value
+        };
       });
     } else {
-      setFormData({
-        ...formData,
+      setFormData(prev => ({
+        ...prev,
         [name]: value
-      });
+      }));
     }
   };
 
@@ -146,15 +205,38 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
             </div>
             <div className="col-md-6">
               <FormGroup>
-                <Label for="time">Time *</Label>
+                <Label for="time">
+                  <FaClock className="me-2" />
+                  Time *
+                </Label>
                 <Input
-                  type="time"
+                  type="select"
                   name="time"
                   id="time"
                   value={formData.time}
                   onChange={handleChange}
                   required
-                />
+                >
+                  <option value="">Choose a time</option>
+                  {timeSlots.map((time, index) => {
+                    const isBooked = bookedSlots.includes(time);
+                    return (
+                      <option
+                        key={index}
+                        value={time}
+                        disabled={isBooked}
+                        style={{ color: isBooked ? '#999' : 'inherit' }}
+                      >
+                        {time} {isBooked ? '(Booked)' : ''}
+                      </option>
+                    );
+                  })}
+                </Input>
+                {bookedSlots.length > 0 && (
+                  <FormText color="muted">
+                    Greyed out slots are already booked
+                  </FormText>
+                )}
               </FormGroup>
             </div>
           </div>

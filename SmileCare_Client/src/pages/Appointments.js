@@ -14,12 +14,19 @@ import {
   Alert
 } from 'reactstrap';
 import AuthModal from '../components/AuthModal';
-import { FaCalendarAlt, FaClock, FaLock, FaUserCircle } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock, FaLock, FaUserCircle, FaMapMarkerAlt } from 'react-icons/fa';
 
 const Appointments = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [user, setUser] = useState(null);
+  const [patient, setPatient] = useState(null);
+  const [dentists, setDentists] = useState([]);
+  const [bookedSlots, setBookedSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [alert, setAlert] = useState({ show: false, message: '', type: '' });
+
+  const API_URL = 'http://localhost:5000';
 
   useEffect(() => {
     // Check if user is logged in
@@ -28,9 +35,70 @@ const Appointments = () => {
       const userData = JSON.parse(storedUser);
       setUser(userData);
       setIsAuthenticated(true);
-      setFormData(prev => ({ ...prev, email: userData.email }));
+      fetchPatientData(userData.email);
     }
+    // Fetch dentists from database
+    fetchDentists();
   }, []);
+
+  const fetchDentists = async () => {
+    try {
+      const response = await fetch(`${API_URL}/dentists`);
+      const data = await response.json();
+      if (data.flag && data.dentists) {
+        setDentists(data.dentists);
+      }
+    } catch (error) {
+      console.error('Error fetching dentists:', error);
+    }
+  };
+
+  const fetchPatientData = async (email) => {
+    try {
+      const response = await fetch(`${API_URL}/patients`);
+      const data = await response.json();
+      if (data.flag && data.patients) {
+        const patientData = data.patients.find(p => p.email === email);
+        if (patientData) {
+          setPatient(patientData);
+          // Auto-fill form with patient data
+          const nameParts = patientData.name.split(' ');
+          setFormData(prev => ({
+            ...prev,
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: patientData.email,
+            phone: patientData.phone || ''
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching patient data:', error);
+    }
+  };
+
+  const fetchBookedSlots = async (dentistId, date) => {
+    if (!dentistId || !date) return;
+
+    try {
+      const response = await fetch(`${API_URL}/appointments`);
+      const data = await response.json();
+      if (data.flag && data.appointments) {
+        // Filter appointments for selected dentist and date
+        const booked = data.appointments
+          .filter(apt =>
+            apt.dentistId === dentistId &&
+            apt.date === date &&
+            apt.status !== 'Cancelled'
+          )
+          .map(apt => apt.time);
+        setBookedSlots(booked);
+      }
+    } catch (error) {
+      console.error('Error fetching booked slots:', error);
+    }
+  };
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -38,11 +106,29 @@ const Appointments = () => {
     phone: '',
     service: '',
     dentist: '',
+    dentistId: '',
     date: '',
     time: '',
     notes: '',
     agreeToTerms: false
   });
+
+  // Location-based service - Following utas-post pattern
+  const [lat, setLat] = useState(null);
+  const [lon, setLon] = useState(null);
+  const [locationCaptured, setLocationCaptured] = useState(false);
+
+  const captureLocation = () => {
+    navigator.geolocation.getCurrentPosition((position) => {
+      setLat(position.coords.latitude);
+      setLon(position.coords.longitude);
+      setLocationCaptured(true);
+      showAlert('Location captured successfully!', 'success');
+    }, (error) => {
+      console.error('Error getting location:', error);
+      showAlert('Unable to capture location. Please enable location services.', 'danger');
+    });
+  };
 
   const services = [
     'General Checkup',
@@ -55,25 +141,25 @@ const Appointments = () => {
     'Emergency Care'
   ];
 
-  const dentists = [
-    'Dr. Ahmed Al-Kindi',
-    'Dr. Fatima Al-Balushi',
-    'Dr. Mohammed Al-Lawati',
-    'Dr. Sara Al-Harthy'
-  ];
-
   const timeSlots = [
     '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
     '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM',
     '4:00 PM', '5:00 PM', '6:00 PM'
   ];
 
+  const showAlert = (message, type) => {
+    setAlert({ show: true, message, type });
+    setTimeout(() => {
+      setAlert({ show: false, message: '', type: '' });
+    }, 5000);
+  };
+
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
     setAuthModalOpen(false);
-    // Pre-fill email from user data
-    setFormData(prev => ({ ...prev, email: userData.email }));
+    // Fetch and pre-fill patient data
+    fetchPatientData(userData.email);
     // Dispatch event to update Navigation
     window.dispatchEvent(new Event('userLoggedIn'));
   };
@@ -84,30 +170,97 @@ const Appointments = () => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value
+    const newValue = type === 'checkbox' ? checked : value;
+
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: newValue
+      };
+
+      // If dentist is changed, store dentist ID and fetch booked slots
+      if (name === 'dentist') {
+        const selectedDentist = dentists.find(d => d.name === value);
+        if (selectedDentist) {
+          updated.dentistId = selectedDentist._id;
+          // Fetch booked slots if date is already selected
+          if (prev.date) {
+            fetchBookedSlots(selectedDentist._id, prev.date);
+          }
+        }
+      }
+
+      // If date is changed, fetch booked slots if dentist is selected
+      if (name === 'date' && prev.dentistId) {
+        fetchBookedSlots(prev.dentistId, value);
+      }
+
+      return updated;
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would send the appointment data to your backend
-    console.log('Appointment Data:', formData);
-    alert('Appointment request submitted! We will confirm your appointment shortly.');
-    // Reset form
-    setFormData({
-      firstName: '',
-      lastName: '',
-      email: user?.email || '',
-      phone: '',
-      service: '',
-      dentist: '',
-      date: '',
-      time: '',
-      notes: '',
-      agreeToTerms: false
-    });
+
+    // Check if selected time slot is already booked
+    if (bookedSlots.includes(formData.time)) {
+      showAlert('This time slot is already booked! Please select another time.', 'danger');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const appointmentData = {
+        patientName: `${formData.firstName} ${formData.lastName}`,
+        patientId: patient?._id || null,
+        dentistName: formData.dentist,
+        dentistId: formData.dentistId,
+        date: formData.date,
+        time: formData.time,
+        service: formData.service,
+        status: 'Pending',
+        notes: formData.notes,
+        lat: lat,
+        lon: lon
+      };
+
+      const response = await fetch(`${API_URL}/appointments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(appointmentData)
+      });
+
+      const data = await response.json();
+
+      if (data.flag) {
+        showAlert('Appointment request submitted successfully! We will confirm your appointment shortly.', 'success');
+        // Reset form but keep user data
+        setFormData({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          service: '',
+          dentist: '',
+          dentistId: '',
+          date: '',
+          time: '',
+          notes: '',
+          agreeToTerms: false
+        });
+        setBookedSlots([]);
+      } else {
+        showAlert(data.serverMsg || 'Failed to submit appointment. Please try again.', 'danger');
+      }
+    } catch (error) {
+      console.error('Error submitting appointment:', error);
+      showAlert('Failed to submit appointment. Please try again.', 'danger');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -208,6 +361,11 @@ const Appointments = () => {
           <Col lg={10}>
             <Card className="appointment-form-card border-0 shadow">
               <CardBody className="p-4 p-md-5">
+                {alert.show && (
+                  <Alert color={alert.type} className="mb-4">
+                    {alert.message}
+                  </Alert>
+                )}
                 <Form onSubmit={handleSubmit}>
                   {/* Personal Information Section */}
                   <h5 className="section-heading">Personal Information</h5>
@@ -311,9 +469,9 @@ const Appointments = () => {
                           required
                         >
                           <option value="">Choose a dentist</option>
-                          {dentists.map((dentist, index) => (
-                            <option key={index} value={dentist}>
-                              {dentist}
+                          {dentists.map((dentist) => (
+                            <option key={dentist._id} value={dentist.name}>
+                              {dentist.name} - {dentist.specialty}
                             </option>
                           ))}
                         </Input>
@@ -354,12 +512,25 @@ const Appointments = () => {
                           required
                         >
                           <option value="">Choose a time</option>
-                          {timeSlots.map((time, index) => (
-                            <option key={index} value={time}>
-                              {time}
-                            </option>
-                          ))}
+                          {timeSlots.map((time, index) => {
+                            const isBooked = bookedSlots.includes(time);
+                            return (
+                              <option
+                                key={index}
+                                value={time}
+                                disabled={isBooked}
+                                style={{ color: isBooked ? '#999' : 'inherit' }}
+                              >
+                                {time} {isBooked ? '(Booked)' : ''}
+                              </option>
+                            );
+                          })}
                         </Input>
+                        {bookedSlots.length > 0 && (
+                          <FormText color="muted">
+                            Greyed out slots are already booked
+                          </FormText>
+                        )}
                       </FormGroup>
                     </Col>
                   </Row>
@@ -375,6 +546,64 @@ const Appointments = () => {
                       value={formData.notes}
                       onChange={handleChange}
                     />
+                  </FormGroup>
+
+                  {/* Location-Based Service - Following utas-post pattern */}
+                  <FormGroup>
+                    <Label>Share Your Location (Optional)</Label>
+                    <div className="location-section p-3 border rounded">
+                      {!locationCaptured ? (
+                        <div className="text-center">
+                          <p className="text-muted mb-3">
+                            Sharing your location helps us provide better directions and service
+                          </p>
+                          <Button
+                            type="button"
+                            color="info"
+                            outline
+                            onClick={captureLocation}
+                          >
+                            <FaMapMarkerAlt className="me-2" />
+                            Capture My Location
+                          </Button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="d-flex justify-content-between align-items-center mb-3">
+                            <span className="text-success">
+                              <FaMapMarkerAlt className="me-2" />
+                              Location Captured
+                            </span>
+                            <Button
+                              type="button"
+                              color="danger"
+                              size="sm"
+                              outline
+                              onClick={() => {
+                                setLat(null);
+                                setLon(null);
+                                setLocationCaptured(false);
+                              }}
+                            >
+                              Remove Location
+                            </Button>
+                          </div>
+                          <div className="map-preview">
+                            <iframe
+                              src={`https://maps.google.com/maps?q=${lat},${lon}&h1=es;&output=embed`}
+                              width="100%"
+                              height="250"
+                              style={{ border: 0, borderRadius: '8px' }}
+                              loading="lazy"
+                              title="Your Location"
+                            />
+                          </div>
+                          <p className="text-muted mt-2 mb-0 small">
+                            Coordinates: {lat?.toFixed(6)}, {lon?.toFixed(6)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
                   </FormGroup>
 
                   {/* Terms and Conditions */}
@@ -402,10 +631,23 @@ const Appointments = () => {
 
                   {/* Submit Buttons */}
                   <div className="d-flex gap-3">
-                    <Button type="submit" color="info" size="lg" className="flex-fill appointment-submit-btn">
-                      Confirm Appointment
+                    <Button
+                      type="submit"
+                      color="info"
+                      size="lg"
+                      className="flex-fill appointment-submit-btn"
+                      disabled={loading}
+                    >
+                      {loading ? 'Submitting...' : 'Confirm Appointment'}
                     </Button>
-                    <Button type="button" color="secondary" outline size="lg" className="appointment-cancel-btn">
+                    <Button
+                      type="button"
+                      color="secondary"
+                      outline
+                      size="lg"
+                      className="appointment-cancel-btn"
+                      disabled={loading}
+                    >
                       Cancel
                     </Button>
                   </div>

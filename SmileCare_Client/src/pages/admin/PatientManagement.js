@@ -184,13 +184,14 @@ const PatientManagement = () => {
                     <th>Name</th>
                     <th>Email</th>
                     <th>Phone</th>
+                    <th>Gender</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentItems.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="text-center py-4">
+                      <td colSpan="6" className="text-center py-4">
                         No patients found
                       </td>
                     </tr>
@@ -201,6 +202,11 @@ const PatientManagement = () => {
                         <td>{patient.name}</td>
                         <td>{patient.email}</td>
                         <td>{patient.phone}</td>
+                        <td>
+                          <span style={{ textTransform: 'capitalize' }}>
+                            {patient.gender || 'N/A'}
+                          </span>
+                        </td>
                         <td>
                           <div className="action-buttons">
                             <button className="action-icon view-icon" title="View">

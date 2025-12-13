@@ -118,20 +118,40 @@ const Contact = () => {
         <Row className="mb-5" id="location">
           <Col>
             <Card className="location-card border-0 shadow-sm">
-              <CardBody className="text-center p-5">
-                <div className="location-icon-wrapper mb-3">
-                  <FaMapMarkerAlt className="location-icon" />
+              <CardBody className="p-4">
+                <div className="text-center mb-4">
+                  <div className="location-icon-wrapper mb-3">
+                    <FaMapMarkerAlt className="location-icon" />
+                  </div>
+                  <h5 className="location-title mb-2">Our Clinic Location</h5>
+                  <p className="location-subtitle mb-0">Al Khuwair, Muscat, Sultanate of Oman 🇴🇲</p>
                 </div>
-                <h5 className="location-title mb-2">Al Khuwair, Muscat</h5>
-                <p className="location-subtitle mb-4">Sultanate of Oman 🇴🇲</p>
-                <a
-                  href="https://www.google.com/maps/search/Al+Khuwair,+Muscat,+Oman"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-info get-directions-btn"
-                >
-                  Get Directions
-                </a>
+
+                {/* Embedded Google Map - Following utas-post pattern */}
+                <div className="map-container mb-4">
+                  <iframe
+                    src="https://maps.google.com/maps?q=23.5880,58.3829&hl=es;&output=embed"
+                    width="100%"
+                    height="400"
+                    style={{ border: 0, borderRadius: '8px' }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="SmileCare Dental Clinic Location"
+                  />
+                </div>
+
+                <div className="text-center">
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=23.5880,58.3829"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn-info get-directions-btn"
+                  >
+                    <FaMapMarkerAlt className="me-2" />
+                    Get Directions
+                  </a>
+                </div>
               </CardBody>
             </Card>
           </Col>

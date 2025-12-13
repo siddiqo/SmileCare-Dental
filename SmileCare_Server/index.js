@@ -62,9 +62,24 @@ app.post("/userRegister", async (req, res) => {
                 userEmail: req.body.email,
                 userPassword: encryptedPassword,
                 userPhone: req.body.phone || "",
+                dateOfBirth: req.body.dateOfBirth,
+                gender: req.body.gender,
                 role: req.body.role || 'user'
             }
             await userModel.create(newUser)
+
+            // Automatically create a patient record for the new user
+            const newPatient = {
+                name: req.body.fullName,
+                email: req.body.email,
+                phone: req.body.phone || "",
+                dateOfBirth: req.body.dateOfBirth,
+                gender: req.body.gender,
+                address: "",
+                medicalHistory: ""
+            }
+            await patientModel.create(newPatient)
+
             res.json({ serverMsg: "Registration successful!", flag: true })
         }
     } catch (err) {
@@ -345,6 +360,21 @@ app.get("/appointments/:id", async (req, res) => {
 // Add new appointment
 app.post("/appointments", async (req, res) => {
     try {
+        // Check if the dentist is already booked at this date and time
+        const conflictingAppointment = await appointmentModel.findOne({
+            dentistId: req.body.dentistId,
+            date: req.body.date,
+            time: req.body.time,
+            status: { $ne: 'Cancelled' } // Ignore cancelled appointments
+        })
+
+        if (conflictingAppointment) {
+            return res.json({
+                serverMsg: "This time slot is already booked for this dentist. Please select a different time.",
+                flag: false
+            })
+        }
+
         const newAppointment = {
             patientName: req.body.patientName,
             patientId: req.body.patientId,
@@ -354,7 +384,9 @@ app.post("/appointments", async (req, res) => {
             time: req.body.time,
             service: req.body.service,
             status: req.body.status || 'Pending',
-            notes: req.body.notes || ""
+            notes: req.body.notes || "",
+            lat: req.body.lat || null,
+            lon: req.body.lon || null
         }
         await appointmentModel.create(newAppointment)
         res.json({ serverMsg: "Appointment created successfully!", flag: true })
@@ -371,6 +403,22 @@ app.put("/appointments/:id", async (req, res) => {
         if (!appointment) {
             res.json({ serverMsg: "Appointment not found", flag: false })
         } else {
+            // Check if the new time slot conflicts with another appointment
+            const conflictingAppointment = await appointmentModel.findOne({
+                _id: { $ne: req.params.id }, // Exclude current appointment
+                dentistId: req.body.dentistId,
+                date: req.body.date,
+                time: req.body.time,
+                status: { $ne: 'Cancelled' }
+            })
+
+            if (conflictingAppointment) {
+                return res.json({
+                    serverMsg: "This time slot is already booked for this dentist. Please select a different time.",
+                    flag: false
+                })
+            }
+
             const updatedAppointment = await appointmentModel.findByIdAndUpdate(
                 req.params.id,
                 {
@@ -382,7 +430,9 @@ app.put("/appointments/:id", async (req, res) => {
                     time: req.body.time,
                     service: req.body.service,
                     status: req.body.status,
-                    notes: req.body.notes
+                    notes: req.body.notes,
+                    lat: req.body.lat || null,
+                    lon: req.body.lon || null
                 },
                 { new: true }
             )

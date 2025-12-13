@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Spinner, Alert, Input } from 'reactstrap';
-import { FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaCalendarPlus } from 'react-icons/fa';
+import { Button, Spinner, Alert, Input, Modal, ModalHeader, ModalBody, ModalFooter } from 'reactstrap';
+import { FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaCalendarPlus, FaMapMarkerAlt } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import AppointmentModal from '../../components/AppointmentModal';
 
@@ -11,6 +11,7 @@ const AppointmentManagement = () => {
   const [dentists, setDentists] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
   const [searchTerm, setSearchTerm] = useState('');
@@ -103,9 +104,21 @@ const AppointmentManagement = () => {
     }
   };
 
+  const toggleViewModal = () => {
+    setViewModalOpen(!viewModalOpen);
+    if (viewModalOpen) {
+      setSelectedAppointment(null);
+    }
+  };
+
   const handleAddNew = () => {
     setSelectedAppointment(null);
     setModalOpen(true);
+  };
+
+  const handleView = (appointment) => {
+    setSelectedAppointment(appointment);
+    setViewModalOpen(true);
   };
 
   const handleEdit = (appointment) => {
@@ -259,13 +272,14 @@ const AppointmentManagement = () => {
                     <th>Time</th>
                     <th>Service</th>
                     <th>Status</th>
+                    <th>Location</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentItems.length === 0 ? (
                     <tr>
-                      <td colSpan="8" className="text-center py-4">
+                      <td colSpan="9" className="text-center py-4">
                         No appointments found
                       </td>
                     </tr>
@@ -284,8 +298,21 @@ const AppointmentManagement = () => {
                           </span>
                         </td>
                         <td>
+                          {appointment.lat && appointment.lon ? (
+                            <span className="text-success" title="Location available">
+                              <FaMapMarkerAlt /> Available
+                            </span>
+                          ) : (
+                            <span className="text-muted">Not shared</span>
+                          )}
+                        </td>
+                        <td>
                           <div className="action-buttons">
-                            <button className="action-icon view-icon" title="View">
+                            <button
+                              className="action-icon view-icon"
+                              onClick={() => handleView(appointment)}
+                              title="View"
+                            >
                               <FaEye />
                             </button>
                             <button
@@ -354,6 +381,97 @@ const AppointmentManagement = () => {
           patients={patients}
           dentists={dentists}
         />
+
+        {/* View Details Modal */}
+        <Modal isOpen={viewModalOpen} toggle={toggleViewModal} size="lg">
+          <ModalHeader toggle={toggleViewModal}>
+            Appointment Details
+          </ModalHeader>
+          <ModalBody>
+            {selectedAppointment && (
+              <div className="appointment-details">
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <h6 className="text-muted mb-2">Patient Information</h6>
+                    <p className="mb-1"><strong>Name:</strong> {selectedAppointment.patientName}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="text-muted mb-2">Dentist Information</h6>
+                    <p className="mb-1"><strong>Name:</strong> {selectedAppointment.dentistName}</p>
+                  </div>
+                </div>
+
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <h6 className="text-muted mb-2">Appointment Schedule</h6>
+                    <p className="mb-1"><strong>Date:</strong> {selectedAppointment.date}</p>
+                    <p className="mb-1"><strong>Time:</strong> {formatTime(selectedAppointment.time)}</p>
+                  </div>
+                  <div className="col-md-6">
+                    <h6 className="text-muted mb-2">Service & Status</h6>
+                    <p className="mb-1"><strong>Service:</strong> {selectedAppointment.service}</p>
+                    <p className="mb-1">
+                      <strong>Status:</strong>{' '}
+                      <span className={`status-badge ${getStatusBadgeClass(selectedAppointment.status)}`}>
+                        {selectedAppointment.status}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {selectedAppointment.notes && (
+                  <div className="row mb-3">
+                    <div className="col-12">
+                      <h6 className="text-muted mb-2">Notes</h6>
+                      <p className="mb-0">{selectedAppointment.notes}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Location Map - Following ShowPosts.js pattern */}
+                {selectedAppointment.lat && selectedAppointment.lon ? (
+                  <div className="row">
+                    <div className="col-12">
+                      <h6 className="text-muted mb-2">
+                        <FaMapMarkerAlt className="me-2" />
+                        Patient Location
+                      </h6>
+                      <div className="border rounded p-2" style={{ backgroundColor: '#f8f9fa' }}>
+                        <iframe
+                          src={`https://maps.google.com/maps?q=${selectedAppointment.lat},${selectedAppointment.lon}&hl=es;&output=embed`}
+                          width="100%"
+                          height="300"
+                          style={{ border: 0, borderRadius: '8px' }}
+                          allowFullScreen=""
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                          title="Patient Location"
+                        />
+                        <p className="text-muted text-center mt-2 mb-0" style={{ fontSize: '0.9rem' }}>
+                          Coordinates: {selectedAppointment.lat.toFixed(6)}, {selectedAppointment.lon.toFixed(6)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="row">
+                    <div className="col-12">
+                      <div className="alert alert-info mb-0">
+                        <FaMapMarkerAlt className="me-2" />
+                        Patient did not share their location for this appointment.
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button color="secondary" onClick={toggleViewModal}>
+              Close
+            </Button>
+          </ModalFooter>
+        </Modal>
       </div>
     </AdminLayout>
   );

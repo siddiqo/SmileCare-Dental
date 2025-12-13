@@ -38,6 +38,14 @@ const appointmentSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    lat: {
+        type: Number,
+        default: null
+    },
+    lon: {
+        type: Number,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

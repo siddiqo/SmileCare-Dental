@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FaHome, FaCalendarAlt, FaUsers, FaUserMd, FaSignOutAlt, FaUser } from 'react-icons/fa';
+import { FaCalendarAlt, FaUsers, FaUserMd, FaSignOutAlt, FaUser } from 'react-icons/fa';
 
 const AdminLayout = ({ children }) => {
   const location = useLocation();
@@ -19,7 +19,6 @@ const AdminLayout = ({ children }) => {
   }, [navigate]);
 
   const navItems = [
-    { path: '/admin/dashboard', icon: FaHome, label: 'Dashboard' },
     { path: '/admin/appointments', icon: FaCalendarAlt, label: 'Appointments' },
     { path: '/admin/patients', icon: FaUsers, label: 'Patients' },
     { path: '/admin/dentists', icon: FaUserMd, label: 'Dentists' }
