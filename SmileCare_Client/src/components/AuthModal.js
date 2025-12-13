@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
-import { loginThunk, registerUserThunk } from '../slices/userSlice'
+import { loginThunk, registerUserThunk, resetRegisterStatus } from '../slices/userSlice'
 import { Modal, ModalBody, Form, FormGroup, Label, Input, Button, Nav, NavItem, NavLink, TabContent, TabPane, Alert } from 'reactstrap'
 import { FaTooth, FaEnvelope, FaLock, FaUser, FaPhone, FaCalendar, FaMapMarkerAlt } from 'react-icons/fa'
 
@@ -12,6 +12,7 @@ export default function AuthModal({ isOpen, toggle, onLoginSuccess }) {
 
     const msg = useSelector((state) => state.user.msg)
     const loginStatus = useSelector((state) => state.user.loginStatus)
+    const registerStatus = useSelector((state) => state.user.registerStatus)
     const loading = useSelector((state) => state.user.loading)
 
     const [activeTab, setActiveTab] = useState('login')
@@ -25,7 +26,10 @@ export default function AuthModal({ isOpen, toggle, onLoginSuccess }) {
     const [registerPassword, setRegisterPassword] = useState('')
 
     const toggleTab = (tab) => {
-        if (activeTab !== tab) setActiveTab(tab)
+        if (activeTab !== tab) {
+            setActiveTab(tab)
+            dispatch(resetRegisterStatus())
+        }
     }
 
     const handleLogin = (e) => {
@@ -65,11 +69,28 @@ export default function AuthModal({ isOpen, toggle, onLoginSuccess }) {
                 navigate('/admin/appointments')
                 toggle()
             } else {
+                // For non-admin users, let the parent component handle closing via onLoginSuccess
                 onLoginSuccess(user)
-                toggle()
             }
         }
     }, [loginStatus])
+
+    useEffect(() => {
+        if (registerStatus) {
+            // Clear registration form
+            setRegisterName('')
+            setRegisterEmail('')
+            setRegisterPhone('')
+            setRegisterDOB('')
+            setRegisterGender('')
+            setRegisterPassword('')
+            // Switch to login tab after 2 seconds
+            setTimeout(() => {
+                setActiveTab('login')
+                dispatch(resetRegisterStatus())
+            }, 2000)
+        }
+    }, [registerStatus, dispatch])
 
     return (
         <Modal isOpen={isOpen} toggle={toggle} centered size="md" className="auth-modal">
@@ -98,7 +119,7 @@ export default function AuthModal({ isOpen, toggle, onLoginSuccess }) {
                     </Nav>
 
                     {msg && (
-                        <Alert color={loginStatus ? 'success' : 'danger'} className="mx-3 mt-3 mb-0">
+                        <Alert color={loginStatus || registerStatus ? 'success' : 'danger'} className="mx-3 mt-3 mb-0">
                             {msg}
                         </Alert>
                     )}

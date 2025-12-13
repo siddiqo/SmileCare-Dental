@@ -193,6 +193,11 @@ const AppointmentManagement = () => {
 
   const formatTime = (timeString) => {
     if (!timeString) return '';
+    // If time already includes AM/PM, return as-is
+    if (timeString.includes('AM') || timeString.includes('PM')) {
+      return timeString;
+    }
+    // Otherwise, convert from 24-hour format
     const [hours, minutes] = timeString.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'PM' : 'AM';

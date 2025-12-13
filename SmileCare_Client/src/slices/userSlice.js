@@ -32,14 +32,20 @@ const userInitialState = {
     user: null,
     msg: null,
     loading: false,
-    loginStatus: false
+    loginStatus: false,
+    registerStatus: false
 }
 
 const userSlice = createSlice(
     {
         name: "userSlice",
         initialState: userInitialState,
-        reducers: {},
+        reducers: {
+            resetRegisterStatus: (state) => {
+                state.registerStatus = false
+                state.msg = null
+            }
+        },
         extraReducers: (builder) => {
 
             //register new user
@@ -50,12 +56,13 @@ const userSlice = createSlice(
             builder.addCase(registerUserThunk.fulfilled, (state, action) => {
                 state.msg = action.payload.serverMsg
                 state.loading = false
-
+                state.registerStatus = action.payload.flag || false
             })
 
             builder.addCase(registerUserThunk.rejected, (state, action) => {
                 state.msg = action.error.message
                 state.loading = false
+                state.registerStatus = false
             })
 
             // login check
@@ -99,4 +106,5 @@ const userSlice = createSlice(
     }
 )
 
+export const { resetRegisterStatus } = userSlice.actions
 export default userSlice.reducer

@@ -320,8 +320,16 @@ app.delete("/patients/:id", async (req, res) => {
         if (!patient) {
             res.json({ serverMsg: "Patient not found", flag: false })
         } else {
+            // Delete the patient record
             await patientModel.findByIdAndDelete(req.params.id)
-            res.json({ serverMsg: "Patient deleted successfully!", flag: true })
+
+            // Also delete the associated user account if it exists
+            await userModel.findOneAndDelete({ userEmail: patient.email })
+
+            // Delete all appointments associated with this patient
+            await appointmentModel.deleteMany({ patientId: req.params.id })
+
+            res.json({ serverMsg: "Patient and associated data deleted successfully!", flag: true })
         }
     } catch (err) {
         console.log("Delete Patient Error:", err)

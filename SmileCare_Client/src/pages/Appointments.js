@@ -157,15 +157,15 @@ const Appointments = () => {
   const handleLoginSuccess = (userData) => {
     setUser(userData);
     setIsAuthenticated(true);
-    setAuthModalOpen(false);
+    setAuthModalOpen(false); // Explicitly close the modal
     // Fetch and pre-fill patient data
     fetchPatientData(userData.email);
     // Dispatch event to update Navigation
     window.dispatchEvent(new Event('userLoggedIn'));
   };
 
-  const openAuthModal = () => {
-    setAuthModalOpen(true);
+  const toggleAuthModal = () => {
+    setAuthModalOpen(!authModalOpen);
   };
 
   const handleChange = (e) => {
@@ -300,7 +300,7 @@ const Appointments = () => {
                       <Button
                         color="info"
                         size="lg"
-                        onClick={openAuthModal}
+                        onClick={toggleAuthModal}
                         className="px-5"
                       >
                         Login / Register
@@ -335,7 +335,7 @@ const Appointments = () => {
 
         <AuthModal
           isOpen={authModalOpen}
-          toggle={() => setAuthModalOpen(!authModalOpen)}
+          toggle={toggleAuthModal}
           onLoginSuccess={handleLoginSuccess}
         />
       </>
