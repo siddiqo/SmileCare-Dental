@@ -17,7 +17,8 @@ app.use(express.json())
 // CORS Configuration
 const allowedOrigins = [
     'http://localhost:3000',
-    'https://smile-care-dental-kohl.vercel.app'
+    'https://smile-care-dental-kohl.vercel.app',
+    'https://smilecaredental-mu.vercel.app'
 ];
 
 app.use(cors({
