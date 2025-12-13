@@ -3,6 +3,7 @@ import { Button, Spinner, Alert } from 'reactstrap';
 import AdminLayout from '../../components/AdminLayout';
 import DentistCard from '../../components/DentistCard';
 import DentistModal from '../../components/DentistModal';
+import API_URL from '../../config/api';
 
 const DentistManagement = () => {
   const [dentists, setDentists] = useState([]);
@@ -10,8 +11,6 @@ const DentistManagement = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedDentist, setSelectedDentist] = useState(null);
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-
-  const API_URL = 'http://localhost:5000';
 
   useEffect(() => {
     fetchDentists();

@@ -69,8 +69,8 @@ export default function AuthModal({ isOpen, toggle, onLoginSuccess }) {
                 navigate('/admin/appointments')
                 toggle()
             } else {
-                // For non-admin users, let the parent component handle closing via onLoginSuccess
                 onLoginSuccess(user)
+                toggle()
             }
         }
     }, [loginStatus])

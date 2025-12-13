@@ -3,6 +3,7 @@ import { Button, Spinner, Alert, Input, Modal, ModalHeader, ModalBody, ModalFoot
 import { FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaCalendarPlus, FaMapMarkerAlt } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import AppointmentModal from '../../components/AppointmentModal';
+import API_URL from '../../config/api';
 
 const AppointmentManagement = () => {
   const [appointments, setAppointments] = useState([]);
@@ -18,8 +19,6 @@ const AppointmentManagement = () => {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const API_URL = 'http://localhost:5000';
 
   useEffect(() => {
     fetchAppointments();

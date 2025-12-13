@@ -15,6 +15,7 @@ import {
 } from 'reactstrap';
 import AuthModal from '../components/AuthModal';
 import { FaCalendarAlt, FaClock, FaLock, FaUserCircle, FaMapMarkerAlt } from 'react-icons/fa';
+import API_URL from '../config/api';
 
 const Appointments = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -25,8 +26,6 @@ const Appointments = () => {
   const [bookedSlots, setBookedSlots] = useState([]);
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-
-  const API_URL = 'http://localhost:5000';
 
   useEffect(() => {
     // Check if user is logged in

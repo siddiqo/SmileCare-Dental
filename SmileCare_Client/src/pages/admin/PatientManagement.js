@@ -3,6 +3,7 @@ import { Button, Spinner, Alert, Input } from 'reactstrap';
 import { FaSearch, FaEye, FaEdit, FaTrash, FaUserPlus } from 'react-icons/fa';
 import AdminLayout from '../../components/AdminLayout';
 import PatientModal from '../../components/PatientModal';
+import API_URL from '../../config/api';
 
 const PatientManagement = () => {
   const [patients, setPatients] = useState([]);
@@ -14,8 +15,6 @@ const PatientManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-
-  const API_URL = 'http://localhost:5000';
 
   useEffect(() => {
     fetchPatients();

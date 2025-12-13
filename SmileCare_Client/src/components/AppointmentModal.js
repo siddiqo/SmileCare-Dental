@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, ModalHeader, ModalBody, ModalFooter, Button, Form, FormGroup, Label, Input, FormText } from 'reactstrap';
 import { FaClock } from 'react-icons/fa';
+import API_URL from '../config/api';
 
 const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, dentists }) => {
   const [formData, setFormData] = useState({
@@ -16,7 +17,6 @@ const AppointmentModal = ({ isOpen, toggle, appointment, onSave, patients, denti
   });
 
   const [bookedSlots, setBookedSlots] = useState([]);
-  const API_URL = 'http://localhost:5000';
 
   const timeSlots = [
     '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
