@@ -111,14 +111,19 @@ app.post("/userRegister", async (req, res) => {
 //Create Admin User (Run this once to create admin)
 app.post("/createAdmin", async (req, res) => {
     try {
-        const adminExist = await userModel.findOne({ userEmail: "admin@smilecare.com" })
+        const adminEmail = process.env.ADMIN_EMAIL
+        const adminPassword = process.env.ADMIN_PASSWORD
+        if (!adminEmail || !adminPassword) {
+            return res.json({ serverMsg: "Set ADMIN_EMAIL and ADMIN_PASSWORD in the server .env first.", flag: false })
+        }
+        const adminExist = await userModel.findOne({ userEmail: adminEmail })
         if (adminExist) {
             res.json({ serverMsg: "Admin already exists!", flag: false })
         } else {
-            const encryptedPassword = await bcrypt.hash("***REMOVED***", 10)
+            const encryptedPassword = await bcrypt.hash(adminPassword, 10)
             const adminUser = {
                 userName: "Admin User",
-                userEmail: "admin@smilecare.com",
+                userEmail: adminEmail,
                 userPassword: encryptedPassword,
                 userPhone: "",
                 role: "admin"
